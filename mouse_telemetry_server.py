@@ -1,6 +1,5 @@
 from flask import Flask, request, jsonify
-from MouseApi.actions.MouseAnalyzer import MouseAnalyzer
-
+from Mouse.actions.MouseAnalyzer import MouseAnalyzer
 
 analyzer = MouseAnalyzer()
 app = Flask(__name__)
@@ -9,15 +8,24 @@ app = Flask(__name__)
 def telemetry_data():
     try:
         data = request.get_json(force=True)
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+
         if isinstance(data, list):
-            added = [analyzer.add_sample(d) for d in data]
+            added = []
+            for d in data:
+                if not isinstance(d, dict):
+                    return jsonify({"error": "Invalid data format in list"}), 400
+                added.append(analyzer.add_sample(d))
             return jsonify({"received": len(added)}), 200
-        else:
+        elif isinstance(data, dict):
             added = analyzer.add_sample(data)
-            return jsonify(added), 200
+            return jsonify({"received": 1, "result": added}), 200
+        else:
+            return jsonify({"error": "Invalid data format"}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 400
-    
+
 @app.route("/telemetry/mouse/stats", methods=["GET"])
 def telemetry_stats():
     return jsonify(analyzer.summary())
