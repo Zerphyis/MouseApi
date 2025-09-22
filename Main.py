@@ -1,4 +1,4 @@
-from .Server import APIServer
+from Server import APIServer
 import threading
 
 def start_telemetry():
