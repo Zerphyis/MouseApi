@@ -1,14 +1,13 @@
 from flask import Flask, request, jsonify, send_file, abort
 import io
 import time
-from .config import Config
-from .auth import Auth
-from .controller import InputController
-from .file_manager import FileManager
-from .actions.mouse_action import MouseAction
-from .actions.keyboard_action import KeyboardAction
-from .actions.media_action import MediaAction
-
+from config import Config
+from auth import Auth
+from controller import InputController
+from file_manager import FileManager
+from actions.mouse_action import MouseAction
+from actions.keyboard_action import KeyboardAction
+from actions.media_action import MediaAction
 
 class APIServer:
     def __init__(self):
