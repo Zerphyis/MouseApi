@@ -1,15 +1,11 @@
-class KeyboardAction:
-    def __init__(self, controller):
-        self.ctrl = controller
+import pyautogui
+from interfaces.IAction import IAction
 
+class KeyBoardAction(IAction):
+    def type(self, text):
+        pyautogui.write(text)
 
-    def type_text(self, text, interval=0.0):
-        self.ctrl.type_text(text, interval=float(interval))
-
-
-    def press(self, key):
-         self.ctrl.press_key(key)
-
-
-    def hotkey(self, keys):
-        self.ctrl.hotkey(*keys)
+    def execute(self, *args, **kwargs):
+        text = kwargs.get("text")
+        if text:
+            self.type(text)
