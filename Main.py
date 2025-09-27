@@ -1,9 +1,8 @@
-from Controller import Controller
+from Server import Server
+
+def main():
+    server = Server()
+    server.start()
 
 if __name__ == "__main__":
-    controller = Controller()
-    try:
-        controller.start()
-    except KeyboardInterrupt:
-        print("Encerrando aplicação...")
-        controller.stop()
+    main()
