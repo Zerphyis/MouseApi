@@ -1,15 +1,16 @@
-class MouseAction:
-    def __init__(self, controller):
-        self.ctrl = controller
+import pyautogui
+from interfaces.IAction import IAction
 
+class MouseAction(IAction):
+    def move(self, x, y):
+        pyautogui.moveTo(x, y)
 
-    def move(self, dx, dy, absolute=False):
-        self.ctrl.move_mouse(float(dx), float(dy), absolute=absolute)
+    def click(self, button="left"):
+        pyautogui.click(button=button)
 
-
-    def click(self, button='left', clicks=1):
-        self.ctrl.click(button=button, clicks=int(clicks))
-
-
-    def scroll(self, amount):
-        self.ctrl.scroll(int(amount))
+    def execute(self, *args, **kwargs):
+        action = kwargs.get("action")
+        if action == "move":
+            self.move(kwargs["x"], kwargs["y"])
+        elif action == "click":
+            self.click(kwargs.get("button", "left"))
