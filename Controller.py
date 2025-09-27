@@ -1,62 +1,60 @@
-import io
+from Config import BLUETOOTH_ENABLED, WIFI_ENABLED, BLUETOOTH_DEVICE_NAME, WIFI_PORT
+from actions.MouseAnalyzer import MouseAnalyzer
+from interfaces.BluetoothInterface import BluetoothInterface
+from interfaces.WifiInterface import WifiInterface
 
-try:
-    import pyautogui
-except Exception:
-    pyautogui = None
+class Controller:
+    """
+    Controlador principal. Faz a ponte entre:
+    - Bluetooth (entrada de eventos)
+    - Wifi (comunicação com celular/servidor)
+    - MouseAnalyzer (análise de métricas)
+    """
 
-from .config import Config
-
-
-class InputController:
     def __init__(self):
-        self.available = pyautogui is not None
-        if not self.available:
-            print('[WARN] pyautogui não disponível')
-        else:
-            pyautogui.FAILSAFE = False
+        self.analyzer = MouseAnalyzer()
+        self.bt = None
+        self.wifi = None
 
-    def move_mouse(self, dx, dy, absolute=False):
-        if not self.available:
-            raise RuntimeError('pyautogui não disponível')
-        if absolute:
-            pyautogui.moveTo(int(dx), int(dy))
-        else:
-            pyautogui.moveRel(
-                int(dx * Config.MOUSE_SENSITIVITY),
-                int(dy * Config.MOUSE_SENSITIVITY)
-            )
+        if BLUETOOTH_ENABLED:
+            self.bt = BluetoothInterface(callback=self.handle_event)
+        if WIFI_ENABLED:
+            self.wifi = WifiInterface(port=WIFI_PORT)
 
-    def click(self, button='left', clicks=1, interval=0.0):
-        if not self.available:
-            raise RuntimeError('pyautogui não disponível')
-        pyautogui.click(button=button, clicks=clicks, interval=interval)
+    def start(self):
+        """
+        Inicia os serviços configurados.
+        """
+        if self.bt:
+            self.bt.connect(BLUETOOTH_DEVICE_NAME)
+        if self.wifi:
+            # roda servidor socketio (bloqueante)
+            self.wifi.start_server()
 
-    def scroll(self, amount):
-        if not self.available:
-            raise RuntimeError('pyautogui não disponível')
-        pyautogui.scroll(int(amount))
+    def handle_event(self, event: dict):
+        """
+        Recebe evento (ex: movimento, clique) do mouse via Bluetooth.
+        Analisa e envia resultado via Wifi.
+        """
+        result = None
 
-    def type_text(self, text, interval=0.0):
-        if not self.available:
-            raise RuntimeError('pyautogui não disponível')
-        pyautogui.typewrite(text, interval=interval)
+        if event["type"] == "movement":
+            result = self.analyzer.analyze_movement(event["dx"], event["dy"])
+        elif event["type"] == "click":
+            result = self.analyzer.analyze_click(event["button"])
+        elif event["type"] == "lag":
+            result = {"lag_ms": self.analyzer.analyze_input_lag(event["timestamp"])}
 
-    def press_key(self, key):
-        if not self.available:
-            raise RuntimeError('pyautogui não disponível')
-        pyautogui.press(key)
+        if self.wifi and result:
+            self.wifi.send_message(result)
 
-    def hotkey(self, *keys):
-        if not self.available:
-            raise RuntimeError('pyautogui não disponível')
-        pyautogui.hotkey(*keys)
+        return result
 
-    def screenshot(self, region=None):
-        if not self.available:
-            raise RuntimeError('pyautogui não disponível')
-        img = pyautogui.screenshot(region=region)
-        buf = io.BytesIO()
-        img.save(buf, format='PNG')
-        buf.seek(0)
-        return buf.read()
+    def stop(self):
+        """
+        Para os serviços.
+        """
+        if self.bt:
+            self.bt.disconnect()
+        if self.wifi:
+            self.wifi.stop_server()
