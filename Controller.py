@@ -1,41 +1,29 @@
-from flask import request
 from actions.MouseAction import MouseAction
-from actions.KeyBoardAction import KeyBoardAction
-from actions.MediaAction import MediaAction
-from actions.FileManager import FileManager
-from HandleController import HandleController
-
-handle_controller = HandleController()
 
 class Controller:
     def __init__(self):
         self.mouse = MouseAction()
-        self.keyboard = KeyBoardAction()
-        self.media = MediaAction()
-        self.file_manager = FileManager()
 
-    @handle_controller.handle
-    def move_mouse(self):
+    def move_mouse(self, request):
         data = request.get_json()
         x, y = data.get("x"), data.get("y")
         self.mouse.move(x, y)
-        return {"status": "ok"}
 
-    @handle_controller.handle
-    def keyboard_type(self):
+    def click_mouse(self, request):
         data = request.get_json()
-        text = data.get("text")
-        self.keyboard.type(text)
-        return {"status": "ok"}
+        button = data.get("button", "left")
+        self.mouse.click(button)
 
-    @handle_controller.handle
-    def media_play(self):
-        self.media.play_pause()
-        return {"status": "ok"}
-
-    @handle_controller.handle
-    def file_open(self):
+    def scroll_mouse(self, request):
         data = request.get_json()
-        path = data.get("path")
-        self.file_manager.open(path)
-        return {"status": "ok"}
+        amount = data.get("amount", 0)
+        self.mouse.scroll(amount)
+
+    def move_mouse_direct(self, x, y):
+        self.mouse.move(x, y)
+
+    def click_mouse_direct(self, button="left"):
+        self.mouse.click(button)
+
+    def scroll_mouse_direct(self, amount):
+        self.mouse.scroll(amount)
