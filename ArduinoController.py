@@ -1,37 +1,38 @@
 import serial
 import threading
-from Controller import Controller
+import requests
 
 class ArduinoController:
     def __init__(self, port="COM3", baudrate=9600):
-        self.ser = serial.Serial(port, baudrate, timeout=1)
-        self.controller = Controller()
+        try:
+            self.ser = serial.Serial(port, baudrate, timeout=1)
+            print(f"[OK] Conectado à ESP32-C3 em {port}")
+            self.connected_serial = True
+        except:
+            print("[!] Nenhum dispositivo serial encontrado. Tentando Wi-Fi...")
+            self.connected_serial = False
+
+        self.esp_ip = "192.168.4.1"  
         self.running = True
 
     def start_listening(self):
-        thread = threading.Thread(target=self.listen_serial)
-        thread.daemon = True
-        thread.start()
+        if self.connected_serial:
+            thread = threading.Thread(target=self.listen_serial, daemon=True)
+            thread.start()
 
     def listen_serial(self):
         while self.running:
             if self.ser.in_waiting > 0:
                 line = self.ser.readline().decode("utf-8").strip()
                 if line:
-                    self.handle_command(line)
+                    print(f"[ESP32] {line}")
 
-    def handle_command(self, command):
-        parts = command.split(":")
-        action = parts[0]
-
-        if action == "MOUSE_MOVE" and len(parts) == 3:
-            x, y = int(parts[1]), int(parts[2])
-            self.controller.move_mouse_direct(x, y)
-
-        elif action == "MOUSE_CLICK" and len(parts) == 2:
-            button = parts[1]
-            self.controller.click_mouse_direct(button)
-
-        elif action == "MOUSE_SCROLL" and len(parts) == 2:
-            amount = int(parts[1])
-            self.controller.scroll_mouse_direct(amount)
+    def send_command(self, command):
+        if self.connected_serial:
+            self.ser.write((command + "\n").encode())
+        else:
+            try:
+                r = requests.post(f"http://{self.esp_ip}/command", data=command, timeout=2)
+                print(f"[Wi-Fi] {r.text}")
+            except Exception as e:
+                print(f"[ERRO Wi-Fi] {e}")
