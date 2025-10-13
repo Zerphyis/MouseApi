@@ -21,8 +21,9 @@ def scroll_mouse():
     return jsonify({"status": "ok", "action": "scroll_mouse"})
 
 if __name__ == "__main__":
-    # Inicia Arduino junto com Flask
     arduino = ArduinoController(port="COM3", baudrate=9600)
     arduino.start_listening()
+
+    controller.set_arduino(arduino)
 
     app.run(host="0.0.0.0", port=5000)
