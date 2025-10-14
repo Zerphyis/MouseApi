@@ -7,9 +7,6 @@ class HandleController:
         self.logger = logging.getLogger("HandleController")
 
     def handle(self, func):
-        """
-        Decorador para capturar exceções e retornar resposta padronizada.
-        """
         def wrapper(*args, **kwargs):
             try:
                 return func(*args, **kwargs)
