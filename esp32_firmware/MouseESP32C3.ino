@@ -56,7 +56,6 @@ void loop() {
     delay(150);
   }
 
-  // Joystick analógico
   int xVal = analogRead(JOY_X);
   int yVal = analogRead(JOY_Y);
 
