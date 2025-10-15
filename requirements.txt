@@ -1,4 +1,4 @@
 flask
 flask-cors
-pynput
-keyboard
+pyautogui
+requests
