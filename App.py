@@ -1,6 +1,7 @@
+# App.py
 from flask import Flask, request, jsonify
 from Controller import Controller
-from ArduinoController import ArduinoController
+from Hardware import ArduinoController
 
 app = Flask(__name__)
 controller = Controller()
