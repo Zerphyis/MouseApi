@@ -1,4 +1,3 @@
-# App.py
 from flask import Flask, request, jsonify
 from Controller import Controller
 from Hardware import ArduinoController
