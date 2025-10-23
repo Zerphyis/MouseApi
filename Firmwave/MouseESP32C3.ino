@@ -9,6 +9,8 @@ WebServer server(80);
 
 String serialBuffer = "";
 
+const char* WIFI_SSID_STA = "SUA_REDE_WIFI";   // Coloque aqui o Wi-Fi que sera usado 
+const char* WIFI_PASS_STA = "SENHA_WIFI";
 
 void sendLog(const String &msg) {
   Serial.println("[INFO] " + msg);
@@ -17,7 +19,6 @@ void sendLog(const String &msg) {
 void sendError(const String &msg) {
   Serial.println("[ERROR] " + msg);
 }
-
 
 void setup() {
   Serial.begin(9600);
@@ -28,19 +29,32 @@ void setup() {
   pinMode(BTN_RIGHT, INPUT_PULLUP);
   pinMode(BTN_SCROLL, INPUT_PULLUP);
 
-  sendLog("Inicializando Wi-Fi...");
-  WiFi.softAP(WIFI_SSID, WIFI_PASS);
-  IPAddress IP = WiFi.softAPIP();
-  sendLog("Wi-Fi ativo!");
-  sendLog("IP: " + IP.toString());
+  sendLog("Conectando ao Wi-Fi...");
+  WiFi.begin(WIFI_SSID_STA, WIFI_PASS_STA);
 
+  int timeout = 0;
+  while (WiFi.status() != WL_CONNECTED && timeout < 20) {
+    delay(500);
+    Serial.print(".");
+    timeout++;
+  }
+
+  if (WiFi.status() == WL_CONNECTED) {
+    IPAddress ip = WiFi.localIP();
+    sendLog("Wi-Fi conectado com sucesso!");
+    sendLog("IP: " + ip.toString());
+  } else {
+    sendError("Falha ao conectar no Wi-Fi. Verifique SSID/Senha.");
+    sendError("O ESP32 entrará em modo Access Point como backup...");
+    WiFi.softAP(WIFI_SSID, WIFI_PASS);
+    IPAddress IP = WiFi.softAPIP();
+    sendLog("Modo AP ativo. IP: " + IP.toString());
+  }
 
   server.on("/command", HTTP_POST, handleWiFiCommand);
   server.begin();
-
-  sendLog("ESP32-C3 HID Mouse pronta!");
+  sendLog("Servidor HTTP iniciado!");
 }
-
 
 void loop() {
   if (Serial.available()) {
@@ -53,20 +67,16 @@ void loop() {
     }
   }
 
-  
   server.handleClient();
-
 
   if (digitalRead(BTN_LEFT) == LOW) {
     Mouse.click(MOUSE_LEFT);
     delay(150);
   }
-
   if (digitalRead(BTN_RIGHT) == LOW) {
     Mouse.click(MOUSE_RIGHT);
     delay(150);
   }
-
   if (digitalRead(BTN_SCROLL) == LOW) {
     Mouse.move(0, 0, 3);
     delay(150);
@@ -74,7 +84,6 @@ void loop() {
 
   int xVal = analogRead(JOY_X);
   int yVal = analogRead(JOY_Y);
-
   if (abs(xVal - 2048) > JOY_DEADZONE || abs(yVal - 2048) > JOY_DEADZONE) {
     int dx = map(xVal, 0, 4095, -MOUSE_SPEED, MOUSE_SPEED);
     int dy = map(yVal, 0, 4095, MOUSE_SPEED, -MOUSE_SPEED);
@@ -84,9 +93,14 @@ void loop() {
   delay(20);
 }
 
-
 void handleWiFiCommand() {
   String body = server.arg("plain");
+  if (body.length() == 0) {
+    server.send(400, "text/plain", "Comando vazio");
+    sendError("Comando Wi-Fi vazio recebido");
+    return;
+  }
+
   handleCommand(body);
   server.send(200, "text/plain", "Comando executado via Wi-Fi");
 }
